@@ -5,6 +5,7 @@
 
 Обновляет раз в год при необходимости
 
+Ссылка на github https://github.com/sokollondon/yii-calculatorWorkDays 
 
 
 INSTALLATION
@@ -23,6 +24,8 @@ return [
   ]
 ];
 ```
+
+3) Накатить миграции
 
 QUICK START
 ------------
