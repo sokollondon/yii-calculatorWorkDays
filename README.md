@@ -5,7 +5,7 @@
 
 Обновляет раз в год при необходимости
 
-Ссылка на github https://github.com/sokollondon/yii-calculatorWorkDays 
+Ссылка на github https://github.com/sokollondon/yii-calculatorWorkDays
 
 
 INSTALLATION

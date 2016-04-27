@@ -61,7 +61,7 @@ class CalculatorWorkDaysComponent extends CApplicationComponent
         if($this->curl_opt_proxy)
             curl_setopt($ch, CURLOPT_PROXY, $this->curl_opt_proxy);
         $data = curl_exec($ch);//Получаем страницу
-//        $data = file_get_contents(dirname(__FILE__)."/temp_page2parse.htm"); //todo-test Получаем страницу из файла, чтобы не напрягать сторонний сайт
+//        $data = file_get_contents(dirname(__FILE__)."/temp_page2parse.htm"); //test Получаем страницу из файла, чтобы не напрягать сторонний сайт
 //        $fp = fopen(dirname(__FILE__)."/temp_page2parse.htm", "w");fwrite($fp, $data);fclose($fp); //Сохраняем страницу в файл для теста
 //        echo $data;
         $html = str_get_html($data);
@@ -109,9 +109,10 @@ class CalculatorWorkDaysComponent extends CApplicationComponent
      * Считает дату по количеству рабочих дней
      * @param string $date_start Дата начала, например 2016-02-11
      * @param int $work_days Кол-во рабочих дней
+     * @param bool $isIncludeDateStart Включать начальную дату?
      * @return int|bool Дата окончания
      */
-    public function getDateFromWorkDay($date_start, $work_days){
+    public function getDateFromWorkDay($date_start, $work_days, $isIncludeDateStart=true){
         //Получаем праздники за текущий и сле. год
         $year_current=(int)date("Y",strtotime($date_start));
         $holidays = $this->getHolidays($year_current,1);
@@ -139,7 +140,9 @@ class CalculatorWorkDaysComponent extends CApplicationComponent
         $day_count=1;
         $date_end=date("Y-m-d",strtotime($date_start));
         while($day_count<=$work_days){
-            $date_end=date("Y-m-d",strtotime($date_end)+3600*24);//Прибавляем день
+            if(!($day_count==1 && $isIncludeDateStart)){//Если нужно включать дату начала, то первый раз не прибавляем
+                $date_end=date("Y-m-d",strtotime($date_end)+3600*24);//Прибавляем день
+            }
             //Если день рабочий -- счетчик_дней++
             if(!in_array($date_end,$holidays)){
                 $day_count++;
