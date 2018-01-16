@@ -6,6 +6,7 @@
  * The followings are the available columns in table 'holiday':
  * @property integer $id
  * @property string $date
+ * @property string $update_date
  */
 class Holiday extends CActiveRecord
 {
@@ -24,9 +25,11 @@ class Holiday extends CActiveRecord
 	{
 		// NOTE: you should only define rules for those attributes that
 		// will receive user inputs.
-		return array(
-			array('date', 'required'),
-		);
+		return [
+			['date', 'required'],
+			['update_date', 'safe'],
+
+        ];
 	}
 
 	/**
@@ -48,6 +51,7 @@ class Holiday extends CActiveRecord
 		return array(
 			'id' => 'ID',
 			'date' => 'Date',
+			'update_date' => 'Дата обновления',
 		);
 	}
 
@@ -55,10 +59,10 @@ class Holiday extends CActiveRecord
 	{
 		$values=$params=[];
 		foreach ($items as $ind=>$date) {
-			$params[]="(:date".$ind.")";
+			$params[]="(:date".$ind.", NOW())";
 			$values[":date".$ind]=$date;
 		}
-		$sql="INSERT INTO ".Holiday::model()->tableName()." (date) VALUES ".implode(",",$params);
+		$sql="INSERT INTO ".Holiday::model()->tableName()." (date, update_date) VALUES ".implode(",",$params);
 		Yii::app()->db->createCommand($sql)
 			->bindValues($values)
 			->execute();

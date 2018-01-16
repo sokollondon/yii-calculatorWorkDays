@@ -22,7 +22,8 @@ class CalculatorWorkDaysComponent extends CApplicationComponent
     public function updateHolidayBase($year)
     {
         $holidays = $this->parseHoliday($year);
-        if($holidays){
+        if(count($holidays)){
+            Holiday::model()->deleteAll("date >= '".$year."-01-01' AND date < '".($year+1)."-01-01'");
             Holiday::insertSeveral($holidays);
             return true;
         }else{
@@ -117,32 +118,14 @@ class CalculatorWorkDaysComponent extends CApplicationComponent
         $year_current=(int)date("Y",strtotime($date_start));
         $holidays = $this->getHolidays($year_current,1);
 
-        //Если в базе нет данных -- обновляем базу
-        if(!count($holidays)){
-            $is_update = $this->updateHolidayBase($year_current);
-            if($is_update){
-                $this->updateHolidayBase(($year_current+1));
-                $holidays = $this->getHolidays($year_current,1);
-            }else{
-                return false;
-            }
-        }
-        //Если в базе нет данных за сделующий год -- обновляем базу
-        $last_holiday = array_pop($holidays);
-        if(date('Y',strtotime($last_holiday))!=($year_current+1)){
-            $is_update = $this->updateHolidayBase($year_current+1);
-            if($is_update){
-                $holidays = $this->getHolidays($year_current,1);
-            }
-        }
-
         //Перебираем дни, считаем рабочие
         $day_count=1;
         $date_end=date("Y-m-d",strtotime($date_start));
+        if($isIncludeDateStart){
+            $date_end=date("Y-m-d",strtotime($date_end)-3600*24);//Вычитаем день
+        }
         while($day_count<=$work_days){
-            if(!($day_count==1 && $isIncludeDateStart)){//Если нужно включать дату начала, то первый раз не прибавляем
-                $date_end=date("Y-m-d",strtotime($date_end)+3600*24);//Прибавляем день
-            }
+            $date_end=date("Y-m-d",strtotime($date_end)+3600*24);//Прибавляем день
             //Если день рабочий -- счетчик_дней++
             if(!in_array($date_end,$holidays)){
                 $day_count++;
@@ -156,17 +139,18 @@ class CalculatorWorkDaysComponent extends CApplicationComponent
      * Плучить массив праздников
      * @param int $year_current
      * @param int $year_count На сколько лет вперед получать праздники
-     * @return array
-     *  Array
-     *  (
-     *  [0] => 2016-01-01
-     *  [1] => 2016-01-02
-     *  )
+     * @param bool $is_update Обновлять базу если нет данных
+     * @return array|false
+     * Array
+     * (
+     * [0] => 2016-01-01
+     * [1] => 2016-01-02
+     * )
      */
-    public function getHolidays($year_current,$year_count=0)
+    public function getHolidays($year_current, $year_count=0, $is_update=true)
     {
-        return Yii::app()->db->createCommand()
-            ->select('date')
+        $holidays = Yii::app()->db->createCommand()
+            ->select('id, date, update_date')
             ->from(Holiday::model()->tableName())
             ->where('date >=:date_start AND date<=:date_end')
             ->order('date')
@@ -174,7 +158,46 @@ class CalculatorWorkDaysComponent extends CApplicationComponent
                 ':date_start'=>$year_current."-01-01",
                 ':date_end'=>($year_current+$year_count)."-12-31",
             ])
-            ->queryColumn();
+            ->queryAll();
+        $update_year = null;
+        if(count($holidays)){
+            reset($holidays);
+            $update_year = date("Y", strtotime(current($holidays)['update_date']));
+            $holidays = CHtml::listData($holidays, 'id', 'date');
+        }
+
+        if($is_update){
+            //Если в базе нет данных -- обновляем базу
+            if(!count($holidays)){
+                $is_upd_ok = $this->updateHolidayBase($year_current);
+                if($is_upd_ok){
+                    $this->updateHolidayBase(($year_current+1));
+                    $holidays = $this->getHolidays($year_current,1, false);
+                }else{
+                    return false;
+                }
+            }else{
+                //Если данные устаревшие и должны быть новые -- обновляем базу
+                if($update_year < $year_current && $year_current <= date("Y")){
+                    $is_upd_ok = $this->updateHolidayBase($year_current);
+                    if($is_upd_ok){
+                        $this->updateHolidayBase(($year_current+1));
+                        $holidays = $this->getHolidays($year_current,1, false);
+                    }
+                }else{
+                    //Если в базе нет данных за сделующий год -- обновляем базу
+                    $last_holiday = array_pop($holidays);
+                    if(date('Y',strtotime($last_holiday))!=($year_current+1)){
+                        $is_upd_ok = $this->updateHolidayBase($year_current+1);
+                        if($is_upd_ok){
+                            $holidays = $this->getHolidays($year_current,1, false);
+                        }
+                    }
+                }
+            }
+        }
+
+        return $holidays;
     }
 
 }
