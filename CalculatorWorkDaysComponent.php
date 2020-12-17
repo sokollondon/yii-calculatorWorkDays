@@ -114,6 +114,7 @@ class CalculatorWorkDaysComponent extends CApplicationComponent
      * @return int|bool Дата окончания
      */
     public function getDateFromWorkDay($date_start, $work_days, $isIncludeDateStart=true){
+        if(!strtotime($date_start)) return false;
         //Получаем праздники за текущий и сле. год
         $year_current=(int)date("Y",strtotime($date_start));
         $holidays = $this->getHolidays($year_current,1);
