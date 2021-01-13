@@ -2,7 +2,7 @@
 
 /**
  * Калькулятор рабочих дней
- * Получает данные о праздничных днях (парсит) с сайта http://calendar.yoip.ru/work/2016-proizvodstvennyj-calendar.html и сохраняет в БД.
+ * Получает данные о праздничных днях (парсит) с сайта https://calendar.yoip.ru/work/2016-proizvodstvennyj-calendar.html и сохраняет в БД.
  * Обновляет раз в год при необходимости
  *
  * @property string $errorMes Сообщение об ошибке
@@ -22,7 +22,7 @@ class CalculatorWorkDaysComponent extends CApplicationComponent
     public function updateHolidayBase($year)
     {
         $holidays = $this->parseHoliday($year);
-        if(count($holidays)){
+        if($holidays){
             Holiday::model()->deleteAll("date >= '".$year."-01-01' AND date < '".($year+1)."-01-01'");
             Holiday::insertSeveral($holidays);
             return true;
@@ -54,7 +54,7 @@ class CalculatorWorkDaysComponent extends CApplicationComponent
             "User-Agent:Mozilla/5.0 (Windows NT 6.1; rv:20.0) Gecko/20100101 Firefox/20.0"
         ];
         $ch = curl_init();
-        curl_setopt($ch, CURLOPT_URL,"http://calendar.yoip.ru/work/$year-proizvodstvennyj-calendar.html");
+        curl_setopt($ch, CURLOPT_URL,"https://calendar.yoip.ru/work/$year-proizvodstvennyj-calendar.html");
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
         curl_setopt($ch, CURLOPT_TIMEOUT, 60);
         curl_setopt($ch, CURLOPT_AUTOREFERER, true);
@@ -112,6 +112,7 @@ class CalculatorWorkDaysComponent extends CApplicationComponent
      * @param int $work_days Кол-во рабочих дней
      * @param bool $isIncludeDateStart Включать начальную дату?
      * @return int|bool Дата окончания
+     * @throws CException
      */
     public function getDateFromWorkDay($date_start, $work_days, $isIncludeDateStart=true){
         if(!strtotime($date_start)) return false;
@@ -147,6 +148,7 @@ class CalculatorWorkDaysComponent extends CApplicationComponent
      * [0] => 2016-01-01
      * [1] => 2016-01-02
      * )
+     * @throws CException
      */
     public function getHolidays($year_current, $year_count=0, $is_update=true)
     {
